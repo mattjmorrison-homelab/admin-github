@@ -9,7 +9,7 @@
 locals {
   repos = toset([
     # ".github",
-    # "admin-github",
+    "admin-github",
     # "ai-claude",
     # "graph-hdmi-switch",
     # "graph-health",
