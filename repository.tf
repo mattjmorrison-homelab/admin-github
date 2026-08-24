@@ -8,6 +8,14 @@ import {
   id = "admin-openbao"
 }
 
+# Same situation as admin-openbao above -- this repo (admin-github
+# itself) also already exists on GitHub, predating its own Terraform
+# ever applying.
+import {
+  to = github_repository.repos["admin-github"]
+  id = "admin-github"
+}
+
 resource "github_repository" "repos" {
   for_each = local.repos
 
