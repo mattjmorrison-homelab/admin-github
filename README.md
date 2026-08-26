@@ -57,49 +57,26 @@ Add its name to the `repos` set in `branch_protection.tf`, then
 
 ## CI
 
-`.woodpecker.yml` runs `tofu plan` on every push/PR, and `tofu apply` on
-push to `main` — which, once branch protection is actually applied to
-this repo itself, only happens via a merged PR.
+`.github/workflows/tofu.yml` runs on this org's self-hosted GitHub
+Actions runners (`k8s-amd64`, from `k8s-github-runner`): a `check` job on
+every PR (`tofu fmt -check`, `tflint`, `tofu plan -out=tfplan`, uploaded
+as an artifact), and an `apply` job that runs only once a PR is merged —
+downloading that exact plan artifact and applying it directly, never
+re-planning at merge time, so what gets applied is always identical to
+what was reviewed. The shared steps (fetching credentials from OpenBao,
+finding the matching plan artifact) live in
+[`actions-tofu`](https://github.com/mattjmorrison-homelab/actions-tofu)
+as composite actions, not duplicated here — same ones `admin-openbao`
+uses.
 
-### What the GitHub App needs
+Branch protection on this repo's own `main` requires `check` to pass and
+1 approving review, same as every other repo `local.repos` covers.
 
-CI authenticates as a GitHub App (`repo-admin` in the [access control
-proposal](https://github.com/mattjmorrison-homelab/.github/blob/main/docs/github-access-control-proposal.md)),
-not a personal token — full design rationale is in that doc; this is the
-exact setup.
+### Authentication
 
-**Register the App** (org Settings → Developer settings → GitHub Apps →
-New GitHub App), on `mattjmorrison-homelab`, with:
-
-- **Organization permissions**
-  - `Administration`: **Read and write** — repo creation/rename
-  - `Members`: **Read and write** — org/team membership for the PR bot,
-    managed from this same repo
-- **Repository permissions**
-  - `Administration`: **Read and write** — branch protection, rulesets,
-    required status checks, repo settings
-- No other permissions — no `Contents`, `Pull requests`, `Metadata`, etc.
-  This App reshapes repo/org structure; it can't read or write code.
-
-**Install** it on `mattjmorrison-homelab`, scoped to all repositories (or
-all current ones plus a habit of adding new ones as they're created).
-
-**Three things end up in OpenBao** (`kv/homelab/gh-org`), none of them a
-static long-lived token:
-
-- `github_app_id` — the App's numeric ID (shown on its settings page)
-- `github_app_installation_id` — the installation's numeric ID (from the
-  URL when viewing the installation, or `GET /orgs/mattjmorrison-homelab/installation`)
-- `github_app_private_key` — the `.pem` generated on the App's settings
-  page (**Generate a private key**)
-
-**Minting a token in CI** (what a step in `.woodpecker.yml` needs to do
-before `tofu` runs): sign a JWT (RS256, `iss` = App ID, `iat` = now minus
-60s for clock drift, `exp` = at most 10 minutes from `iat`) with the
-private key, then `POST
-https://api.github.com/app/installations/{installation_id}/access_tokens`
-with `Authorization: Bearer <jwt>`, which returns a `{"token": ...}` valid
-for about an hour. Export that as `GITHUB_TOKEN` for the rest of the
-pipeline. Not yet wired into `.woodpecker.yml` — currently still using a
-personal fine-grained PAT in `kv/homelab/gh-org`'s `github_token`, which
-the proposal doc flags for revocation once this is live.
+CI authenticates to the GitHub API with a personal fine-grained PAT
+(`kv/homelab/admin-github/github-token` in OpenBao), fetched at runtime
+via `actions-tofu`'s `fetch-credentials` action — not a GitHub App. A
+GitHub App-based design was proposed (see the [access control
+proposal](https://github.com/mattjmorrison-homelab/.github/blob/main/docs/github-access-control-proposal.md))
+but never built; the PAT is what's actually live today.
