@@ -55,6 +55,63 @@ endpoints = { s3 = "http://localhost:3900" } }` block in a temporary
 Add its name to the `repos` set in `branch_protection.tf`, then
 `tofu apply`.
 
+## Renaming a repo already in `local.repos`
+
+GitHub keeps the old name working as a redirect to the same real repo
+after a rename — `gh api repos/OWNER/OLD_NAME --jq '.name'` returns the
+*new* name if this has already happened. That matters here because
+Terraform doesn't know the two names are the same repo: if both the old
+and new name ever end up in `local.repos` at once, `tofu plan` treats
+them as two separate resources targeting one real repo, and
+`github_branch_protection`'s create fails outright ("Name already
+protected: main") the moment the second one tries to apply. Learned this
+the hard way with `homelab-openbao` → `k8s-openbao`.
+
+The steps, in order:
+
+1. Rename the repo on GitHub first (Settings → repo name). Confirm it
+   actually moved: `gh api repos/OWNER/OLD_NAME --jq '.name'` should
+   print the new name.
+2. In `local.repos`: add the new name, remove the old name, in the same
+   commit — never have both at once.
+3. This leaves two stale entries in Terraform's state file under the old
+   name: `github_repository.repos["OLD_NAME"]` and
+   `github_branch_protection.main["OLD_NAME"]`. Once the old key is gone
+   from `local.repos`, `tofu plan` wants to *destroy* both — for
+   `github_repository` that's blocked by `prevent_destroy` (good, it
+   would otherwise call GitHub's real delete-repo API against the repo
+   both names point to); for `github_branch_protection` there's no such
+   guard, so left unaddressed it would call the real
+   remove-branch-protection API before the new name's own entry has a
+   chance to be the sole owner.
+4. Fix: drop both from state, without touching real infrastructure —
+   ```sh
+   tofu state rm 'github_repository.repos["OLD_NAME"]'
+   tofu state rm 'github_branch_protection.main["OLD_NAME"]'
+   ```
+   This only edits the state file; no API calls happen. A `removed`
+   block looks like the declarative way to express this, but doesn't
+   work here — it only supports removing an entire resource block, not
+   one instance out of a `for_each` (confirmed by OpenTofu's own error:
+   "Resource address cannot be a resource instance"). `state rm` is the
+   only tool that operates at single-instance granularity.
+5. Running `state rm` needs real backend credentials against the S3
+   (Garage) backend — see "Local usage" above for the env vars and the
+   port-forward/override needed from outside the cluster. If that's too
+   much friction, temporarily add the same two commands (with `|| true`,
+   so it's harmless if already clean) into `check`'s existing steps
+   right after `tofu init` — `check` already runs on every PR, so this
+   doesn't need a new trigger type or a merge first. Remove the lines
+   again once the state is clean.
+6. To confirm real branch protection status (not just what's in state),
+   use `gh api repos/OWNER/REPO/branches/main --jq '.protected'` — the
+   classic `/branches/main/protection` endpoint and GraphQL's
+   `branchProtectionRules` can both come back empty/404 even when
+   protection genuinely exists, for reasons unrelated to whether it's
+   actually there (a real false negative hit during this exact rename
+   cleanup). The plain `protected` boolean on the branch object itself
+   is the one that's actually reliable.
+
 ## CI
 
 `.github/workflows/tofu.yml` runs on this org's self-hosted GitHub
