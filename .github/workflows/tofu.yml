@@ -3,26 +3,8 @@ name: OpenTofu
 on:
   pull_request:
     types: [opened, synchronize, reopened, closed]
-  workflow_dispatch: {}
 
 jobs:
-  state-rm:
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: k8s-amd64
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: opentofu/setup-opentofu@9d84900f3238fab8cd84ce47d658d25dd008be2f # v1.0.8
-        with:
-          tofu_version: "1.12.0"
-          tofu_wrapper: false
-      - uses: mattjmorrison-homelab/actions-tofu/fetch-credentials@58daf722248c6ba7c9308cf67b6ec3dd58ddff39
-        with:
-          needs-github-token: "true"
-      - run: tofu init
-      - run: tofu state rm 'github_repository.repos["homelab-openbao"]'
-      - run: tofu state rm 'github_branch_protection.main["homelab-openbao"]'
-
-
   check:
     if: github.event.action != 'closed'
     runs-on: k8s-amd64
@@ -41,6 +23,8 @@ jobs:
         with:
           needs-github-token: "true"
       - run: tofu init
+      - run: tofu state rm 'github_repository.repos["homelab-openbao"]' || true
+      - run: tofu state rm 'github_branch_protection.main["homelab-openbao"]' || true
       - run: tofu plan -out=tfplan
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
