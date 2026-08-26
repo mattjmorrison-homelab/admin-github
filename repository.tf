@@ -1,19 +1,15 @@
-# admin-openbao already exists on GitHub (predates this repo's Terraform
-# ever running), so it needs importing rather than created fresh -- without
-# this, the first apply would try to create a repo with a name that's
-# already taken and fail with a 422. Safe to leave in place permanently:
-# once the resource is in state, this becomes a no-op on later runs.
+# Every repo in local.repos already exists on GitHub before it's ever
+# added here -- the workflow is always: create the repo, then wire it
+# into this file, never the other way around. So importing all of them
+# by name is always correct, not just for the ones added so far.
+# Already-imported repos are a no-op on every later apply once they're in
+# state -- safe to leave in permanently, and this means uncommenting a
+# repo in local.repos gets it imported automatically, no separate import
+# block to remember.
 import {
-  to = github_repository.repos["admin-openbao"]
-  id = "admin-openbao"
-}
-
-# Same situation as admin-openbao above -- this repo (admin-github
-# itself) also already exists on GitHub, predating its own Terraform
-# ever applying.
-import {
-  to = github_repository.repos["admin-github"]
-  id = "admin-github"
+  for_each = local.repos
+  to       = github_repository.repos[each.value]
+  id       = each.value
 }
 
 resource "github_repository" "repos" {
