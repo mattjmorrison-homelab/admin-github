@@ -8,56 +8,80 @@
 # out to everything else. Uncomment the rest once that's verified.
 locals {
   repos = toset([
-    # ".github",
+    # Meta Repo
+    ".github",
+
+    # Admin repos
     "admin-github",
-    # "ai-claude",
-    # "graph-hdmi-switch",
-    # "graph-health",
-    # "graph-router",
-    # "homelab",
-    # "homelab-alertmanager",
-    # "homelab-apps",
-    # "homelab-argocd",
-    # "homelab-argocd-image-updater",
-    # "homelab-cert-manager",
-    # "homelab-cert-manager-config",
-    # "homelab-cert-manager-crds",
-    # "homelab-cloudflare",
-    # "homelab-coredns",
-    # "homelab-external-secrets",
-    # "homelab-external-secrets-crds",
-    # "homelab-grafana",
-    # "homelab-home-assistant",
-    # "homelab-homepage",
-    # "homelab-kube-state-metrics",
-    # "homelab-node-exporter",
     "admin-openbao",
-    # "homelab-openbao",
-    # "homelab-pihole",
-    # "homelab-prometheus",
-    # "homelab-speedtest-exporter",
-    # "homelab-traefik",
-    # "homelab-woodpecker",
-    # "homelab-zot",
-    # "k8s-garage",
-    # "k8s-graphql-router",
-    # "k8s-hdmi-switch",
-    # "k8s-health",
-    # "k8s-matter-server",
-    # "pi-health",
-    # "pi-provision",
-    # "ui-hdmi-switch",
+    "admin-network",
+
+    # Github Actions repos
+    "actions-helm",
+    "actions-tofu",
+
+    # AI Repos
+    "ai-claude",
+
+    # Graphql Repos
+    "graph-hdmi-switch",
+    "graph-health",
+    "graph-router",
+
+    # k8s repos
+    "k8s-ci-rbac",
+    "k8s-github-runner",
+    "k8s-openbao",
+    "k8s-garage",
+    "k8s-graphql-router",
+    "k8s-hdmi-switch",
+    "k8s-health",
+    "k8s-matter-server",
+
+    # Raspberry Pi Repos
+    "pi-health",
+    "pi-provision",
+
+    # Steamos Repos
+    "steamos-provision",
+
+    # Web App Repos
+    "ui-hdmi-switch",
+
+    # Legacy names
+    "homelab",
+    "homelab-alertmanager",
+    "homelab-apps",
+    "homelab-argocd",
+    "homelab-argocd-image-updater",
+    "homelab-cert-manager",
+    "homelab-cert-manager-config",
+    "homelab-cert-manager-crds",
+    "homelab-cloudflare",
+    "homelab-coredns",
+    "homelab-external-secrets",
+    "homelab-external-secrets-crds",
+    "homelab-grafana",
+    "homelab-home-assistant",
+    "homelab-homepage",
+    "homelab-kube-state-metrics",
+    "homelab-node-exporter",
+    "homelab-openbao",
+    "homelab-pihole",
+    "homelab-prometheus",
+    "homelab-speedtest-exporter",
+    "homelab-traefik",
+    "homelab-woodpecker",
+    "homelab-zot",
   ])
 }
 
-# Per-repo required status check names, for repos whose CI has a check
-# that must pass before merge (e.g. admin-openbao's Terraform "plan" job,
-# whose plan artifact the merge-time apply step depends on being current).
-# Repos with no entry here still get `strict = true` below -- they just
-# don't require any specific named check to pass.
+# Every repo in local.repos is required to have a passing "check" before
+# merge -- no opt-out. Don't uncomment a repo above until it actually has
+# a "check" job in its own CI, or its PRs become permanently unmergeable.
 locals {
   required_checks = {
-    "admin-openbao" = ["check"]
+    for repo in local.repos : repo => ["check"]
   }
 }
 
