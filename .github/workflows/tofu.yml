@@ -23,8 +23,6 @@ jobs:
         with:
           needs-github-token: "true"
       - run: tofu init
-      - run: tofu state rm 'github_repository.repos["homelab-openbao"]' || true
-      - run: tofu state rm 'github_branch_protection.main["homelab-openbao"]' || true
       - run: tofu plan -out=tfplan
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
