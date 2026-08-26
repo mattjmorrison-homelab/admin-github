@@ -66,7 +66,6 @@ locals {
     "homelab-homepage",
     "homelab-kube-state-metrics",
     "homelab-node-exporter",
-    "homelab-openbao",
     "homelab-pihole",
     "homelab-prometheus",
     "homelab-speedtest-exporter",
