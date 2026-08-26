@@ -15,7 +15,7 @@ locals {
     "admin-github",
     "admin-openbao",
     "admin-network",
-    
+
     # Github Actions repos
     "actions-helm",
     "actions-tofu",
