@@ -12,21 +12,6 @@ import {
   id       = each.value
 }
 
-# homelab-openbao was this repo's old name before it was renamed to
-# k8s-openbao -- GitHub just redirects the old name, it's the same real
-# repo. Removing it from local.repos correctly drops the old state key,
-# but github_repository's destroy is a real delete-repo API call, and
-# prevent_destroy rightly blocks that. `removed` (declarative counterpart
-# to `import`) tells Terraform to just forget this key instead, without
-# touching the real repo k8s-openbao's own entry already owns.
-removed {
-  from = github_repository.repos["homelab-openbao"]
-
-  lifecycle {
-    destroy = false
-  }
-}
-
 resource "github_repository" "repos" {
   for_each = local.repos
 

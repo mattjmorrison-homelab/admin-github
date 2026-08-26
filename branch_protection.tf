@@ -84,21 +84,6 @@ locals {
   }
 }
 
-# homelab-openbao and k8s-openbao are the same real repo (renamed;
-# GitHub redirects the old name) -- see the matching removed block in
-# repository.tf for the full explanation. This one has no
-# prevent_destroy, so a bare removal from local.repos would actually
-# delete the branch protection rule via a real API call before k8s-
-# openbao's own entry ever got a chance to be the sole owner. `removed`
-# avoids that too.
-removed {
-  from = github_branch_protection.main["homelab-openbao"]
-
-  lifecycle {
-    destroy = false
-  }
-}
-
 # Org-wide rulesets would cover this in one resource, but GitHub only
 # enforces those on a Team/Enterprise plan (confirmed against this org on
 # Free) — so protection is applied per repo instead via the classic
