@@ -17,6 +17,7 @@ locals {
     "admin-network",
 
     # Github Actions repos
+    "actions-bash",
     "actions-helm",
     "actions-tofu",
 
