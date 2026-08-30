@@ -116,6 +116,37 @@ The steps, in order:
    cleanup). The plain `protected` boolean on the branch object itself
    is the one that's actually reliable.
 
+## State recovery after mass rename incident (one-time fix)
+
+`scripts/fix-repo-rename-state.sh` and its manually-triggered workflow
+(`.github/workflows/fix-repo-rename-state.yml`) re-key Terraform state
+from old repo names to new names — a state-only operation, no GitHub API
+calls. This fixes a situation where Terraform state entries are keyed by
+old names (e.g. `github_repository.repos["homelab-argocd"]`) after repos
+have been renamed on GitHub, causing `tofu plan` to see the new names as
+missing resources and old names as orphaned, which would trigger
+destroy+create cycles.
+
+After manually running the workflow once via GitHub's Actions UI and
+confirming state recovery is complete, delete the script and workflow
+from the repo — they are one-time tools, not permanent.
+
+**CRITICAL:** The follow-up PR that updates `local.repos` to the new
+names must merge IMMEDIATELY after the state recovery workflow completes,
+with NO other admin-github PR merged in between. During the window after
+`state mv` runs but before `local.repos` is updated, Terraform state and
+config are keyed differently (state uses NEW names, config still has OLD
+names). If any other PR triggers a `tofu apply` in that gap,
+`github_repository.repos` will hard-fail under `prevent_destroy` (Terraform
+would see the new-keyed resource as orphaned), and `github_branch_protection.main`
+will silently destroy and recreate itself. Merge the follow-up PR
+immediately to close this window.
+
+The `github_branch_protection.main` re-keying is precautionary, for
+consistency with the repository re-keying — it does not prevent loss of a
+live resource. Branch protection on these repos does not currently exist
+on GitHub; it is already effectively phantom in state.
+
 ## CI
 
 `.github/workflows/tofu.yml` runs on this org's self-hosted GitHub
