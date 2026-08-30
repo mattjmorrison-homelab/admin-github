@@ -14,7 +14,11 @@ one-secret-per-path.
 
 - `repository.tf` — every repo in the org (`github_repository`,
   `visibility = "public"`, `prevent_destroy` guarded so removing a name
-  from the list can't delete a real repo by accident).
+  from the list can't delete a real repo by accident). `auto_init = true`
+  so newly-created repos start with a README and a default branch
+  instead of being created completely empty — an empty repo has no
+  branch for `github_branch_protection.main` to attach to, so this
+  avoids a chicken-and-egg failure the first time a new name is applied.
 - `branch_protection.tf` — protects `main` on every repo in the org:
   requires a pull request with at least one approving review, no force
   pushes, and (via `enforce_admins`) no exceptions for org owners either.
