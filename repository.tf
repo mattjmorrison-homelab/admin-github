@@ -3,6 +3,7 @@ resource "github_repository" "repos" {
 
   name       = each.value
   visibility = "public"
+  auto_init  = true
 
   has_issues   = true
   has_projects = true
