@@ -38,6 +38,7 @@ locals {
     "k8s-hdmi-switch",
     "k8s-health",
     "k8s-matter-server",
+    "k8s-host-rbac",
 
     # Raspberry Pi Repos
     "pi-health",
