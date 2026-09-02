@@ -1,41 +1,5 @@
 # admin-github
 
-## ⚠ DO NOT MERGE ANY PR HERE UNTIL THIS SECTION IS REMOVED (as of 2026-08-31)
-
-This repo's Terraform state does not match live GitHub reality right now,
-following a real incident: `local.repos` had every renamed repo's old name,
-so an unrelated merge (PR #8) triggered `tofu apply` to revert 22 already-
-renamed repos back to their old GitHub names. State was partially repaired
-via `tofu state mv` (PR #10, already merged, workflow already run), and all
-22 repos (plus `k8s-ci-rbac`→`k8s-lib-ci-rbac`, renamed separately/manually,
-**not yet reflected in Terraform state at all**) are now correctly renamed
-live on GitHub — confirmed via direct API audit.
-
-**Two PRs are open and must NOT be merged as-is:**
-- **#9** (`add-k8s-host-rbac-repo`) — adds a new repo to `local.repos`;
-  looks unrelated but touches the same list, so merging it while state is
-  still drifted risks re-triggering the same class of incident.
-- **#11** (`update-local-repos-renamed-names`) — updates `local.repos` to
-  the new names. Its branch also has an uncommitted `lifecycle {
-  create_before_destroy = true }` change on `github_branch_protection.main`
-  that was added, then found to likely break `tofu apply` outright (GitHub
-  only allows one `main`-pattern protection rule per repo, so create-before-
-  destroy collides with the still-live old rule) — never reverted before
-  the session that found this ended. Don't build on this branch as-is.
-
-**Agreed plan, not yet executed:** rather than keep patching `state mv`/
-lifecycle workarounds, delete Terraform's state for the affected resources
-(`github_repository.repos` + `github_branch_protection.main`, per repo) and
-re-baseline cleanly with `import` blocks against current live reality (which
-now already matches the desired `k8s-*` names) — a fresh import never
-computes a destroy/replace diff, since nothing needs to change. Open
-question, never answered: scope this to just the ~23 affected repos, or all
-46 for a fully clean baseline. Full context: this README's own "Renaming a
-repo already in `local.repos`" section below, and PRs #9/#10/#11's
-descriptions.
-
----
-
 OpenTofu config managing the `mattjmorrison-homelab` GitHub org, using the
 [`integrations/github`](https://registry.terraform.io/providers/integrations/github/latest)
 provider. See `naming.md`'s `admin-` prefix for why this repo exists — its
@@ -151,6 +115,24 @@ The steps, in order:
    actually there (a real false negative hit during this exact rename
    cleanup). The plain `protected` boolean on the branch object itself
    is the one that's actually reliable.
+
+`github_branch_protection.main`'s `repository_id` is set to
+`github_repository.repos[each.value].node_id`, not `.name` — the
+provider accepts either, but `node_id` is stable across a rename and
+`.name` isn't. This matters because a renamed repo's old and new
+`github_branch_protection` entries share one *physical* repo, which
+GitHub allows only one `main` protection rule on: using `.name` means
+every rename forces this resource to be replaced, and no replace
+ordering can avoid an error, since GitHub always rejects whichever side
+tries to exist second (confirmed for all 21 renamed repos in PR #11's
+apply, GH Actions run 33574795688). `node_id` avoids the tradeoff
+entirely: a rename no longer changes `repository_id` at all, so
+`github_branch_protection` is never replaced by a rename in the first
+place. This also happens to be what `tofu import` resolves
+`repository_id` to on its own (confirmed via PR #18's plan output), so
+importing against a `.name`-based config forces an immediate spurious
+replace of every imported `github_branch_protection` — using `node_id`
+avoids that too.
 
 ## State recovery after mass rename incident (one-time fix)
 
