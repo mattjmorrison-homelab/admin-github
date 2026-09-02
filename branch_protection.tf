@@ -122,4 +122,16 @@ resource "github_branch_protection" "main" {
 
   allows_force_pushes = false
   enforce_admins      = true
+
+  # repository_id is ForceNew, so renaming a repo in local.repos forces
+  # this resource to be replaced. Confirmed via a real `tofu plan` (GH
+  # Actions run 33349850337) on the rename in PR #10: ~21 of these
+  # resources, one per renamed repo, came back "must be replaced". The
+  # default destroy-then-create order would leave the repo with zero
+  # branch protection -- on a public repo -- for the window between the
+  # destroy and the create. create_before_destroy closes that window by
+  # creating the new protection object first.
+  lifecycle {
+    create_before_destroy = true
+  }
 }
