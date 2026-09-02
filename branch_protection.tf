@@ -103,7 +103,10 @@ locals {
 resource "github_branch_protection" "main" {
   for_each = local.repos
 
-  repository_id = github_repository.repos[each.value].name
+  # node_id (not name) so a rename in local.repos never forces this
+  # resource to be replaced -- see the README's rename section and the
+  # incident notes below for why that distinction matters.
+  repository_id = github_repository.repos[each.value].node_id
   pattern       = "main"
 
   required_pull_request_reviews {
@@ -122,16 +125,4 @@ resource "github_branch_protection" "main" {
 
   allows_force_pushes = false
   enforce_admins      = true
-
-  # repository_id is ForceNew, so renaming a repo in local.repos forces
-  # this resource to be replaced. Confirmed via a real `tofu plan` (GH
-  # Actions run 33349850337) on the rename in PR #10: ~21 of these
-  # resources, one per renamed repo, came back "must be replaced". The
-  # default destroy-then-create order would leave the repo with zero
-  # branch protection -- on a public repo -- for the window between the
-  # destroy and the create. create_before_destroy closes that window by
-  # creating the new protection object first.
-  lifecycle {
-    create_before_destroy = true
-  }
 }
