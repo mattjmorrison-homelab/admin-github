@@ -1,11 +1,10 @@
-# Repos currently in the org (`gh repo list mattjmorrison-homelab`, captured
-# 2026-08-19, plus admin-github and k8s-garage once they're pushed). Add
-# new repos here as they're created.
-#
-# Everything but admin-openbao is commented out for now -- this is a brand
-# new, never-applied repo, being used to import the existing repos as-is
-# and prove out branch protection on admin-openbao first before rolling it
-# out to everything else. Uncomment the rest once that's verified.
+# Repos currently in the org (`gh repo list mattjmorrison-homelab`). Add
+# new repos here as they're created — see the README's "Adding a new
+# repo" and "Renaming a repo already in local.repos" sections for the
+# exact steps. Getting the ordering wrong (old and new name both present
+# at once, or this list keyed differently than Terraform state) can
+# hard-fail `tofu plan` or silently destroy+recreate real branch
+# protection.
 locals {
   repos = toset([
     # Meta Repo
@@ -30,7 +29,9 @@ locals {
     "graph-router",
 
     # k8s repos
-    "k8s-ci-rbac",
+    # k8s-lib-ci-rbac: a reusable Helm library chart — see
+    # .github/docs/rbac-plan.md.
+    "k8s-lib-ci-rbac",
     "k8s-github-runner",
     "k8s-openbao",
     "k8s-garage",
@@ -50,30 +51,40 @@ locals {
     # Web App Repos
     "ui-hdmi-switch",
 
-    # Legacy names
+    # Legacy names — these two are deliberately not renamed.
+    # homelab-woodpecker is being retired outright, not renamed (its
+    # Application entry gets removed and the repo archived once nothing
+    # depends on it anymore) — see .github/docs/rbac-plan.md. homelab's
+    # own rename to nix-control-plane is part of the broader org-wide
+    # renaming initiative in .github/docs/naming.md, which hasn't been
+    # greenlit to execute yet.
     "homelab",
-    "homelab-alertmanager",
-    "homelab-apps",
-    "homelab-argocd",
-    "homelab-argocd-image-updater",
-    "homelab-cert-manager",
-    "homelab-cert-manager-config",
-    "homelab-cert-manager-crds",
-    "homelab-cloudflare",
-    "homelab-coredns",
-    "homelab-external-secrets",
-    "homelab-external-secrets-crds",
-    "homelab-grafana",
-    "homelab-home-assistant",
-    "homelab-homepage",
-    "homelab-kube-state-metrics",
-    "homelab-node-exporter",
-    "homelab-pihole",
-    "homelab-prometheus",
-    "homelab-speedtest-exporter",
-    "homelab-traefik",
     "homelab-woodpecker",
-    "homelab-zot",
+
+    # k8s repos, renamed from their legacy homelab-* names — see
+    # naming.md's rename mapping and PR #10
+    # (https://github.com/mattjmorrison-homelab/admin-github/pull/10).
+    "k8s-alertmanager",
+    "k8s-apps",
+    "k8s-argocd",
+    "k8s-argocd-image-updater",
+    "k8s-cert-manager",
+    "k8s-cert-manager-config",
+    "k8s-cert-manager-crds",
+    "k8s-cloudflare",
+    "k8s-coredns",
+    "k8s-external-secrets",
+    "k8s-external-secrets-crds",
+    "k8s-grafana",
+    "k8s-home-assistant",
+    "k8s-homepage",
+    "k8s-kube-state-metrics",
+    "k8s-node-exporter",
+    "k8s-pihole",
+    "k8s-prometheus",
+    "k8s-speedtest-exporter",
+    "k8s-traefik",
+    "k8s-zot",
   ])
 }
 
@@ -112,4 +123,16 @@ resource "github_branch_protection" "main" {
 
   allows_force_pushes = false
   enforce_admins      = true
+
+  # repository_id is ForceNew, so renaming a repo in local.repos forces
+  # this resource to be replaced. Confirmed via a real `tofu plan` (GH
+  # Actions run 33349850337) on the rename in PR #10: ~21 of these
+  # resources, one per renamed repo, came back "must be replaced". The
+  # default destroy-then-create order would leave the repo with zero
+  # branch protection -- on a public repo -- for the window between the
+  # destroy and the create. create_before_destroy closes that window by
+  # creating the new protection object first.
+  lifecycle {
+    create_before_destroy = true
+  }
 }
