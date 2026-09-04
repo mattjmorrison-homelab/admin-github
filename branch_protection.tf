@@ -32,6 +32,12 @@ locals {
     # k8s-lib-ci-rbac: a reusable Helm library chart — see
     # .github/docs/rbac-plan.md.
     "k8s-lib-ci-rbac",
+    # k8s-ci-rbac: per-consumer CI RBAC (ServiceAccount +
+    # Role/RoleBinding), deployed independently of any consumer's own
+    # chart -- avoids the bootstrap chicken-and-egg where a chart's own
+    # CI dry-run needs RBAC that chart itself hasn't been merged/synced
+    # to create yet.
+    "k8s-ci-rbac",
     "k8s-github-runner",
     "k8s-openbao",
     "k8s-garage",
