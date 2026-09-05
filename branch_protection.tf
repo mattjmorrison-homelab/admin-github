@@ -18,6 +18,8 @@ locals {
     # Github Actions repos
     "actions-bash",
     "actions-helm",
+    "actions-k8s",
+    "actions-openbao",
     "actions-tofu",
 
     # AI Repos
