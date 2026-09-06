@@ -14,6 +14,7 @@ locals {
     "admin-github",
     "admin-openbao",
     "admin-network",
+    "admin-discord",
 
     # Github Actions repos
     "actions-bash",
