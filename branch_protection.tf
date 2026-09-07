@@ -97,6 +97,23 @@ locals {
   ])
 }
 
+# Repos that are still real (github_repository stays managed, prevent_destroy
+# and all) but no longer need branch protection because nothing merges to
+# them anymore. Kept separate from an `archived` flag on the repository
+# itself: GitHub rejects branch-protection changes on an already-archived
+# repo, so removing protection has to land and apply cleanly *before* the
+# repository is ever flipped to archived=true, as its own separate change.
+locals {
+  archived_repos = toset([
+    # Retired outright, not renamed -- see the comment on homelab-woodpecker
+    # in local.repos above. This step only drops branch protection; a
+    # follow-up change sets archived=true once this is confirmed applied.
+    "homelab-woodpecker",
+  ])
+
+  active_repos = setsubtract(local.repos, local.archived_repos)
+}
+
 # Every repo in local.repos is required to have a passing "check" before
 # merge -- no opt-out. Don't uncomment a repo above until it actually has
 # a "check" job in its own CI, or its PRs become permanently unmergeable.
@@ -111,7 +128,7 @@ locals {
 # Free) — so protection is applied per repo instead via the classic
 # branch_protection resource, which isn't plan-gated.
 resource "github_branch_protection" "main" {
-  for_each = local.repos
+  for_each = local.active_repos
 
   # node_id (not name) so a rename in local.repos never forces this
   # resource to be replaced -- see the README's rename section and the
