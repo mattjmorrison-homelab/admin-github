@@ -4,11 +4,9 @@ OpenTofu config managing the `mattjmorrison-homelab` GitHub org, using the
 [`integrations/github`](https://registry.terraform.io/providers/integrations/github/latest)
 provider. See `naming.md`'s `admin-` prefix for why this repo exists — its
 destination is the GitHub org/API itself, not a machine or the cluster.
-The OpenBao KV path (`kv/homelab/gh-org`) and Kubernetes Secret
-(`gh-org-github-token`) this repo's CI reads from don't match this repo's
-own name — internal identifiers, not required to track it, and due for
-restructuring anyway by the planned `admin-openbao` migration to
-one-secret-per-path.
+CI's own credentials live at `admin-github/tofu-state-access-key-id`,
+`admin-github/tofu-state-secret-access-key`, and `admin-github/github-token`
+in OpenBao — one key per path, matching this repo's own name.
 
 ## What this manages
 
@@ -40,8 +38,8 @@ enough:
 
 ```sh
 export GITHUB_TOKEN=$(gh auth token)
-export AWS_ACCESS_KEY_ID=<TOFU_STATE_ACCESS_KEY_ID from kv/homelab/gh-org>
-export AWS_SECRET_ACCESS_KEY=<TOFU_STATE_SECRET_ACCESS_KEY from kv/homelab/gh-org>
+export AWS_ACCESS_KEY_ID=<value from kv/homelab/admin-github/tofu-state-access-key-id>
+export AWS_SECRET_ACCESS_KEY=<value from kv/homelab/admin-github/tofu-state-secret-access-key>
 tofu init
 tofu plan
 tofu apply
