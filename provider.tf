@@ -8,14 +8,17 @@ terraform {
     }
   }
 
-  # State lives in k8s-garage's tofu-state bucket, not locally — CI runs in
-  # a fresh pod each time, so local state would start blank on every run.
-  # Credentials come from AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY (CI:
-  # fetched directly from OpenBao by actions-tofu/fetch-credentials into
-  # GITHUB_ENV, no Kubernetes Secret involved; locally: your own values
-  # from kv/homelab/admin-github/tofu-state-*), not from this file.
+  # State lives in this repo's own dedicated Garage bucket (Phase 1b,
+  # admin-openbao#39) -- migrated off the old shared tofu-state bucket,
+  # confirmed live via a zero-drift plan against the copied state. Not
+  # locally, since CI runs in a fresh pod each time. Credentials come
+  # from AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY (CI: fetched directly
+  # from OpenBao by actions-tofu/fetch-credentials into GITHUB_ENV, no
+  # Kubernetes Secret involved; locally: your own values from
+  # kv/homelab/service/k8s-garage/admin-github/tofu-state-*), not from
+  # this file.
   backend "s3" {
-    bucket = "tofu-state"
+    bucket = "admin-github-tofu-state"
     key    = "admin-github/terraform.tfstate"
     region = "garage"
 
