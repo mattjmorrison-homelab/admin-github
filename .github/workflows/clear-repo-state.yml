@@ -14,6 +14,10 @@ jobs:
   clear-state:
     if: github.event.inputs.confirm == 'CLEAR'
     runs-on: k8s-amd64
+    # OIDC (todo #17): same admin-github-oidc role/mechanism as tofu.yml.
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - run: sudo apt-get update && sudo apt-get install -y make
@@ -21,10 +25,37 @@ jobs:
         with:
           tofu_version: "1.12.0"
           tofu_wrapper: false
-      - uses: mattjmorrison-homelab/actions-tofu/fetch-credentials@58daf722248c6ba7c9308cf67b6ec3dd58ddff39
-        with:
-          role: admin-github-tofu-state
-          kv-prefix: service/k8s-garage/admin-github
-          needs-github-token: "true"
+      - name: Fetch credentials via GitHub OIDC + OpenBao jwt auth
+        env:
+          VAULT_ADDR: http://k8s-openbao.openbao.svc:8200
+        run: |
+          GH_OIDC_TOKEN=$(curl -sf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=openbao" | jq -r '.value')
+
+          CLIENT_TOKEN=$(curl -sf -X POST "$VAULT_ADDR/v1/auth/jwt/login" \
+            -d "$(jq -nc --arg jwt "$GH_OIDC_TOKEN" '{jwt: $jwt, role: "admin-github-oidc"}')" \
+            | jq -r '.auth.client_token')
+
+          fetch_secret() {
+            curl -sf -H "X-Vault-Token: $CLIENT_TOKEN" \
+              "$VAULT_ADDR/v1/kv/data/homelab/service/k8s-garage/admin-github/$1" \
+              | jq -r '.data.data.value'
+          }
+          fetch_admin_github_secret() {
+            curl -sf -H "X-Vault-Token: $CLIENT_TOKEN" \
+              "$VAULT_ADDR/v1/kv/data/homelab/admin-github/$1" \
+              | jq -r '.data.data.value'
+          }
+
+          ACCESS_KEY_ID=$(fetch_secret tofu-state-access-key-id)
+          SECRET_ACCESS_KEY=$(fetch_secret tofu-state-secret-access-key)
+          GH_ORG_TOKEN=$(fetch_admin_github_secret github-token)
+
+          echo "::add-mask::$ACCESS_KEY_ID"
+          echo "::add-mask::$SECRET_ACCESS_KEY"
+          echo "::add-mask::$GH_ORG_TOKEN"
+          echo "AWS_ACCESS_KEY_ID=$ACCESS_KEY_ID" >> "$GITHUB_ENV"
+          echo "AWS_SECRET_ACCESS_KEY=$SECRET_ACCESS_KEY" >> "$GITHUB_ENV"
+          echo "GITHUB_TOKEN=$GH_ORG_TOKEN" >> "$GITHUB_ENV"
       - run: tofu init
       - run: make clear-repo-state
