@@ -14,6 +14,8 @@ jobs:
           tofu_wrapper: false
       - uses: mattjmorrison-homelab/actions-tofu/fetch-credentials@58daf722248c6ba7c9308cf67b6ec3dd58ddff39
         with:
+          role: admin-github-tofu-state
+          kv-prefix: service/k8s-garage/admin-github
           needs-github-token: "true"
       - run: tofu init
       - run: bash scripts/fix-repo-rename-state.sh
