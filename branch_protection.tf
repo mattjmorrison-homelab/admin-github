@@ -32,6 +32,12 @@ locals {
     "graph-health",
     "graph-router",
 
+    # App Repos -- naming.md's `app-` prefix: source + CI for a full-stack
+    # app that doesn't fit graph-/ui- (not a federated-graph subgraph
+    # contributor, frontend+backend bundled in one workspace by the tool's
+    # own scaffolding). First example: app-backstage.
+    "app-backstage",
+
     # k8s repos
     # k8s-lib-ci-rbac: a reusable Helm library chart — see
     # .github/docs/rbac-plan.md.
@@ -47,6 +53,7 @@ locals {
     "k8s-garage",
     "k8s-graphql-router",
     "k8s-hdmi-switch",
+    "k8s-backstage",
     "k8s-health",
     "k8s-matter-server",
     "k8s-host-rbac",
