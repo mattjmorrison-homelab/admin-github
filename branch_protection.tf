@@ -38,6 +38,12 @@ locals {
     # own scaffolding). First example: app-backstage.
     "app-backstage",
 
+    # Docker Repos -- a `docker-` prefix repo builds and publishes a
+    # shared/reusable Docker image consumed by other repos as a base image
+    # -- it isn't deployed on its own. First example: docker-backstage,
+    # consumed by app-backstage.
+    "docker-backstage",
+
     # k8s repos
     # k8s-lib-ci-rbac: a reusable Helm library chart — see
     # .github/docs/rbac-plan.md.
