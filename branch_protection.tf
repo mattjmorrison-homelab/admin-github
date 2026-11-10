@@ -28,6 +28,7 @@ locals {
     "ai-claude",
 
     # Graphql Repos
+    "graph-ad-reporter",
     "graph-hdmi-switch",
     "graph-health",
     "graph-router",
@@ -63,6 +64,7 @@ locals {
     "k8s-health",
     "k8s-matter-server",
     "k8s-host-rbac",
+    "k8s-ad-reporter",
 
     # Raspberry Pi Repos
     "pi-health",
@@ -72,6 +74,7 @@ locals {
     "steamos-provision",
 
     # Web App Repos
+    "ui-ad-reporter",
     "ui-hdmi-switch",
 
     # Legacy names — these two are deliberately not renamed.
