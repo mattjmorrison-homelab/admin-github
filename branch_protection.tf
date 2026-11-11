@@ -23,6 +23,7 @@ locals {
     "actions-k8s",
     "actions-openbao",
     "actions-tofu",
+    "actions-workflow-dispatch",
 
     # AI Repos
     "ai-claude",
