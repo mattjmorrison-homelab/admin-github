@@ -66,6 +66,7 @@ locals {
     "k8s-matter-server",
     "k8s-host-rbac",
     "k8s-ad-reporter",
+    "k8s-healthchecks",
 
     # Raspberry Pi Repos
     "pi-health",
