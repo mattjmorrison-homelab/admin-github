@@ -69,6 +69,7 @@ locals {
     "k8s-healthchecks",
 
     # Raspberry Pi Repos
+    "pi-fleet",
     "pi-health",
     "pi-provision",
 
