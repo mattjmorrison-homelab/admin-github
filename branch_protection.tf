@@ -30,6 +30,7 @@ locals {
 
     # Graphql Repos
     "graph-ad-reporter",
+    "graph-claude",
     "graph-hdmi-switch",
     "graph-health",
     "graph-router",
@@ -67,6 +68,7 @@ locals {
     "k8s-host-rbac",
     "k8s-ad-reporter",
     "k8s-healthchecks",
+    "k8s-claude",
 
     # Raspberry Pi Repos
     "pi-fleet",
