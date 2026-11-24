@@ -64,6 +64,7 @@ jobs:
           echo "AWS_SECRET_ACCESS_KEY=$SECRET_ACCESS_KEY" >> "$GITHUB_ENV"
           echo "GITHUB_TOKEN=$GH_ORG_TOKEN" >> "$GITHUB_ENV"
       - run: tofu init
+      - run: tofu test
       - run: tofu plan -out=tfplan
       - uses: mattjmorrison-homelab/actions-tofu/upload-plan@c4253df5832781cf10d3b5dda78c135e6eed2a6b
         with:
