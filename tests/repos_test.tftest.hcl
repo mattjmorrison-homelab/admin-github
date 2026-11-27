@@ -48,7 +48,6 @@ run "repos_use_renamed_names" {
         "homelab-argocd",
         "homelab-apps",
         "homelab-homepage",
-        "k8s-ci-rbac",
         "homelab-alertmanager",
         "homelab-prometheus",
         "homelab-zot",
